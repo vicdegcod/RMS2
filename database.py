@@ -1,0 +1,126 @@
+import sqlite3
+import streamlit as st
+
+# ==============================
+# DATABASE CONNECTION
+# ==============================
+
+conn = sqlite3.connect("rehabilitation.db", check_same_thread=False)
+cursor = conn.cursor()
+
+
+# ==============================
+# CREATE TABLES
+# ==============================
+
+def create_tables():
+
+    # ---------------- USERS ----------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users(
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
+    )
+    """)
+
+    # ---------------- CLIENTS ----------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS clients(
+        client_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        age INTEGER NOT NULL,
+        gender TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        condition TEXT NOT NULL,
+        completed_sessions INTEGER DEFAULT 0,
+        total_sessions INTEGER DEFAULT 0
+    )
+    """)
+
+    # ---------------- THERAPISTS ----------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS therapists(
+        therapist_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        specialization TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL
+    )
+    """)
+
+    # ---------------- APPOINTMENTS ----------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS appointments(
+        appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER NOT NULL,
+        therapist_id INTEGER NOT NULL,
+        appointment_date TEXT NOT NULL,
+        status TEXT DEFAULT 'Booked',
+
+        FOREIGN KEY(client_id)
+        REFERENCES clients(client_id),
+
+        FOREIGN KEY(therapist_id)
+        REFERENCES therapists(therapist_id)
+    )
+    """)
+
+    # ---------------- THERAPY NOTES ----------------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS therapy_notes(
+        note_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER NOT NULL,
+        therapist_id INTEGER NOT NULL,
+        session_date TEXT NOT NULL,
+        notes TEXT NOT NULL,
+
+        FOREIGN KEY(client_id)
+        REFERENCES clients(client_id),
+
+        FOREIGN KEY(therapist_id)
+        REFERENCES therapists(therapist_id)
+    )
+    """)
+
+    conn.commit()
+
+
+# ==============================
+# DEFAULT USERS
+# ==============================
+
+def create_default_users():
+
+    users = [
+        ("admin", "admin123", "Admin"),
+        ("therapist", "therapy123", "Therapist")
+    ]
+
+    for user in users:
+        try:
+            cursor.execute("""
+            INSERT INTO users(username, password, role)
+            VALUES(?,?,?)
+            """, user)
+        except sqlite3.IntegrityError:
+            pass
+
+    conn.commit()
+
+
+# ==============================
+# CLOSE DATABASE
+# ==============================
+
+def close_database():
+    conn.close()
+
+
+# ==============================
+# INITIALIZE DATABASE
+# ==============================
+
+create_tables()
+create_default_users()
